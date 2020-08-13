@@ -1,14 +1,4 @@
-# Matic Swap
-
-Deploys token trading contracts on Matic Network.
-
-Execute this to deploy:
-
-`truffle migrate --network matic`
-
-# Changes from Uniswap V2
-
-The code in this project was originally taken from these three repositories:
+The code from this project was originally taken from these three repositories:
 https://github.com/Uniswap/uniswap-lib
 https://github.com/Uniswap/uniswap-v2-core
 https://github.com/Uniswap/uniswap-v2-periphery
@@ -17,8 +7,6 @@ Code from the above repositories were combined into this one and they were upgra
 These changes occurred on 12 August 2020.
 
 The code from these repositories are used as a base for token trading on Matic Network.
-
-See CHANGES.md for further changes.
 
 Nick Mudge <nick@perfectabstractions.com>
 https://twitter.com/mudgen
