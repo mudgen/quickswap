@@ -6,6 +6,11 @@ Execute this to deploy:
 
 `truffle migrate --network matic`
 
+Matic Mumbai Network contract addresses:
+
+* UniswapV2Factory: `0x4A271b59763D4D8A18fF55f1FAA286dE97317B15`
+* UniswapV2Router02: `0xDf36944e720cf5Af30a3C5D80d36db5FB71dDE40`
+
 # Changes from Uniswap V2
 
 The code in this project was originally taken from these three repositories:
