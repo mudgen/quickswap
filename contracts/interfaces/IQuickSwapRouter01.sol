@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity >=0.7.0;
 
-interface IUniswapV2Router01 {
+interface IQuickSwapRouter01 {
     function factory() external view returns (address);
     function WETH() external view returns (address);
 
