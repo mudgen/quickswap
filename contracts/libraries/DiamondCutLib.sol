@@ -1,22 +1,15 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.7.0;
+pragma solidity >=0.7.1;
 pragma experimental ABIEncoderV2;
 
-/******************************************************************************\
-* Author: Nick Mudge
-*
-* Implementation of Diamond facet.
-* This is gas optimized by reducing storage reads and storage writes.
-/******************************************************************************/
+import * as dsf from '../storage/DiamondStorage.sol';
 
-import { DiamondStorageContract } from '../storage/DiamondStorageContract.sol';
+library DiamondCutLib {
 
-contract Diamond is DiamondStorageContract {
-    
-    event DiamondCut(bytes[] _diamondCut);
-    
-    bytes32 constant CLEAR_ADDRESS_MASK = 0x0000000000000000000000000000000000000000ffffffffffffffffffffffff;
-    bytes32 constant CLEAR_SELECTOR_MASK = 0xffffffff00000000000000000000000000000000000000000000000000000000;
+    event DiamondCut(bytes[] _diamondCut, address _init, bytes _calldata);
+
+    bytes32 constant CLEAR_ADDRESS_MASK = bytes32(uint(0xffffffffffffffffffffffff));                                                                     
+    bytes32 constant CLEAR_SELECTOR_MASK = bytes32(uint(0xffffffff << 224));
 
     // This struct is used to prevent getting the error "CompilerError: Stack too deep, try removing local variables."
     // See this article: https://medium.com/1milliondevs/compilererror-stack-too-deep-try-removing-local-variables-solved-a6bcecc16231
@@ -26,10 +19,19 @@ contract Diamond is DiamondStorageContract {
         uint oldSelectorSlotsIndex;
         uint oldSelectorSlotIndex;
         bytes32 oldSelectorSlot;
-        bool newSlot;
+        bool updateLastSlot;
     }
+
+
+// Non-standard internal function version of diamondCut 
+    // This code is almost the same as externalCut in DiamondFacet, 
+    // except it allows anyone to call it (internally) and is using
+    // 'bytes[] memory _diamondCut' instead of 'bytes[] calldata _diamondCut'
+    // and it issues the DiamondCut event.
+    // The code is duplicated to prevent copying calldata to memory which
+    // causes an error for an array of bytes arrays.
     function diamondCut(bytes[] memory _diamondCut) internal {
-        DiamondStorage storage ds = diamondStorage();
+        dsf.DiamondStorage storage ds = dsf.diamondStorage();
         SlotInfo memory slot;
         slot.originalSelectorSlotsLength = ds.selectorSlotsLength;
         uint selectorSlotsLength = uint128(slot.originalSelectorSlotsLength);
@@ -48,9 +50,9 @@ contract Diamond is DiamondStorageContract {
             bytes32 newFacet = bytes20(currentSlot);
             uint numSelectors = (facetCut.length - 20) / 4;
             uint position = 52;
-            
+
             // adding or replacing functions
-            if(newFacet != 0) {
+            if(newFacet != 0) {                
                 // add and replace selectors
                 for(uint selectorIndex; selectorIndex < numSelectors; selectorIndex++) {
                     bytes4 selector;
@@ -61,29 +63,31 @@ contract Diamond is DiamondStorageContract {
                     bytes32 oldFacet = ds.facets[selector];
                     // add
                     if(oldFacet == 0) {
+                        // update the last slot at then end of the function
+                        slot.updateLastSlot = true;
                         ds.facets[selector] = newFacet | bytes32(selectorSlotLength) << 64 | bytes32(selectorSlotsLength);
+                        // clear selector position in slot and add selector
                         slot.selectorSlot = slot.selectorSlot & ~(CLEAR_SELECTOR_MASK >> selectorSlotLength * 32) | bytes32(selector) >> selectorSlotLength * 32;
                         selectorSlotLength++;
+                        // if slot is full then write it to storage
                         if(selectorSlotLength == 8) {
                             ds.selectorSlots[selectorSlotsLength] = slot.selectorSlot;
                             slot.selectorSlot = 0;
                             selectorSlotLength = 0;
                             selectorSlotsLength++;
-                            slot.newSlot = false;
-                        }
-                        else {
-                            slot.newSlot = true;
                         }
                     }
                     // replace
                     else {
                         require(bytes20(oldFacet) != bytes20(newFacet), "Function cut to same facet.");
+                        // replace old facet address
                         ds.facets[selector] = oldFacet & CLEAR_ADDRESS_MASK | newFacet;
                     }
                 }
             }
             // remove functions
             else {
+                slot.updateLastSlot = true;
                 for(uint selectorIndex; selectorIndex < numSelectors; selectorIndex++) {
                     bytes4 selector;
                     assembly {
@@ -92,6 +96,7 @@ contract Diamond is DiamondStorageContract {
                     position += 4;
                     bytes32 oldFacet = ds.facets[selector];
                     require(oldFacet != 0, "Function doesn't exist. Can't remove.");
+                    // Current slot is empty so get the slot before it
                     if(slot.selectorSlot == 0) {
                         selectorSlotsLength--;
                         slot.selectorSlot = ds.selectorSlots[selectorSlotsLength];
@@ -99,23 +104,28 @@ contract Diamond is DiamondStorageContract {
                     }
                     slot.oldSelectorSlotsIndex = uint64(uint(oldFacet));
                     slot.oldSelectorSlotIndex = uint32(uint(oldFacet >> 64));
+                    // gets the last selector in the slot
                     bytes4 lastSelector = bytes4(slot.selectorSlot << (selectorSlotLength-1) * 32);
                     if(slot.oldSelectorSlotsIndex != selectorSlotsLength) {
-                        slot.oldSelectorSlot = ds.selectorSlots[slot.oldSelectorSlotsIndex];                            
-                        slot.oldSelectorSlot = slot.oldSelectorSlot & ~(CLEAR_SELECTOR_MASK >> slot.oldSelectorSlotIndex * 32) | bytes32(lastSelector) >> slot.oldSelectorSlotIndex * 32;                                                
-                        ds.selectorSlots[slot.oldSelectorSlotsIndex] = slot.oldSelectorSlot;                        
-                        selectorSlotLength--;                            
-                    }
-                    else {
-                        slot.selectorSlot = slot.selectorSlot & ~(CLEAR_SELECTOR_MASK >> slot.oldSelectorSlotIndex * 32) | bytes32(lastSelector) >> slot.oldSelectorSlotIndex * 32;
+                        slot.oldSelectorSlot = ds.selectorSlots[slot.oldSelectorSlotsIndex];
+                        // clears the selector we are deleting and puts the last selector in its place.
+                        slot.oldSelectorSlot = slot.oldSelectorSlot & ~(CLEAR_SELECTOR_MASK >> slot.oldSelectorSlotIndex * 32) | bytes32(lastSelector) >> slot.oldSelectorSlotIndex * 32;
+                        // update storage with the modified slot
+                        ds.selectorSlots[slot.oldSelectorSlotsIndex] = slot.oldSelectorSlot;
                         selectorSlotLength--;
                     }
-                    if(selectorSlotLength == 0) {
-                        delete ds.selectorSlots[selectorSlotsLength];                                                
-                        slot.selectorSlot = 0;
+                    else {
+                        // clears the selector we are deleting and puts the last selector in its place.
+                        slot.selectorSlot = slot.selectorSlot & ~(CLEAR_SELECTOR_MASK >> slot.oldSelectorSlotIndex * 32) | bytes32(lastSelector) >> slot.oldSelectorSlotIndex * 32;
+                        selectorSlotLength--;                        
                     }
-                    if(lastSelector != selector) {                      
-                        ds.facets[lastSelector] = oldFacet & CLEAR_ADDRESS_MASK | bytes20(ds.facets[lastSelector]); 
+                    if(selectorSlotLength == 0) {
+                        delete ds.selectorSlots[selectorSlotsLength];
+                        slot.selectorSlot = 0;                        
+                    }
+                    if(lastSelector != selector) {
+                        // update last selector slot position info
+                        ds.facets[lastSelector] = oldFacet & CLEAR_ADDRESS_MASK | bytes20(ds.facets[lastSelector]);
                     }
                     delete ds.facets[selector];
                 }
@@ -123,11 +133,11 @@ contract Diamond is DiamondStorageContract {
         }
         uint newSelectorSlotsLength = selectorSlotLength << 128 | selectorSlotsLength;
         if(newSelectorSlotsLength != slot.originalSelectorSlotsLength) {
-            ds.selectorSlotsLength = newSelectorSlotsLength;            
-        }        
-        if(slot.newSlot) {
-            ds.selectorSlots[selectorSlotsLength] = slot.selectorSlot;                        
+            ds.selectorSlotsLength = newSelectorSlotsLength;
         }
-        emit DiamondCut(_diamondCut);
+        if(slot.updateLastSlot && selectorSlotLength > 0) {
+            ds.selectorSlots[selectorSlotsLength] = slot.selectorSlot;
+        }        
+        emit DiamondCut(_diamondCut, address(0), new bytes(0));
     }
 }

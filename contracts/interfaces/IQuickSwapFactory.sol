@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity >=0.7.0;
+pragma solidity >=0.7.1;
 
 interface IQuickSwapFactory {
     event PairCreated(address indexed token0, address indexed token1, address pair, uint);

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.7.0;
+pragma solidity >=0.7.1;
 pragma experimental ABIEncoderV2;
 
 /******************************************************************************\
@@ -7,11 +7,10 @@ pragma experimental ABIEncoderV2;
 *
 * Implementation of DiamondLoupe interface.
 /******************************************************************************/
-
-import { DiamondStorageContract } from '../libraries/Diamond.sol';
+import * as dsf from '../storage/DiamondStorage.sol';
 import { IDiamondLoupe } from '../interfaces/IDiamondLoupe.sol';
 
-contract DiamondLoupe is IDiamondLoupe, DiamondStorageContract {
+contract DiamondLoupe is IDiamondLoupe {
     /// These functions are expected to be called frequently
     /// by tools. Therefore the return values are tightly
     /// packed for efficiency. That means no padding with zeros.    
@@ -35,7 +34,7 @@ contract DiamondLoupe is IDiamondLoupe, DiamondStorageContract {
     /// facet is the address of a facet.    
     /// sel1, sel2, sel3 etc. are four-byte function selectors.
     function facets() external view override returns(bytes[] memory) {
-        DiamondStorage storage ds = diamondStorage();
+        dsf.DiamondStorage storage ds = dsf.diamondStorage();
         uint totalSelectorSlots = ds.selectorSlotsLength;
         uint selectorSlotLength = uint128(totalSelectorSlots >> 128);
         totalSelectorSlots = uint128(totalSelectorSlots);        
@@ -130,7 +129,7 @@ contract DiamondLoupe is IDiamondLoupe, DiamondStorageContract {
     /// The return value is tightly packed. Here is an example:
     /// return abi.encodePacked(selector1, selector2, selector3, ...)
     function facetFunctionSelectors(address _facet) external view override returns(bytes memory) {
-        DiamondStorage storage ds = diamondStorage();
+        dsf.DiamondStorage storage ds = dsf.diamondStorage();
         uint totalSelectorSlots = ds.selectorSlotsLength;
         uint selectorSlotLength = uint128(totalSelectorSlots >> 128);
         totalSelectorSlots = uint128(totalSelectorSlots);        
@@ -174,7 +173,7 @@ contract DiamondLoupe is IDiamondLoupe, DiamondStorageContract {
     /// Example return value: 
     /// return abi.encodePacked(facet1, facet2, facet3, ...)
     function facetAddresses() external view override returns(bytes memory) {
-        DiamondStorage storage ds = diamondStorage();
+        dsf.DiamondStorage storage ds = dsf.diamondStorage();
         uint totalSelectorSlots = ds.selectorSlotsLength;
         uint selectorSlotLength = uint128(totalSelectorSlots >> 128);
         totalSelectorSlots = uint128(totalSelectorSlots);        
@@ -227,14 +226,14 @@ contract DiamondLoupe is IDiamondLoupe, DiamondStorageContract {
     /// @param _functionSelector The function selector.
     /// @return The facet address.
     function facetAddress(bytes4 _functionSelector) external view override returns(address) {
-        DiamondStorage storage ds = diamondStorage();
+        dsf.DiamondStorage storage ds = dsf.diamondStorage();
         return address(bytes20(ds.facets[_functionSelector]));
     }
 
     // This is an immutable functions because it is defined directly in the diamond.
     // This implements ERC-165.
     function supportsInterface(bytes4 _interfaceID) external view returns (bool) {
-        DiamondStorage storage ds = diamondStorage();
+        dsf.DiamondStorage storage ds = dsf.diamondStorage();
         return ds.supportedInterfaces[_interfaceID];
     }
 }

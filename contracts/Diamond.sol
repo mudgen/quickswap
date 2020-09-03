@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.7.0;
+pragma solidity >=0.7.1;
 pragma experimental ABIEncoderV2;
 /******************************************************************************\
 * Author: Nick Mudge
@@ -8,21 +8,25 @@ pragma experimental ABIEncoderV2;
 * using the Diamond Standard.
 /******************************************************************************/
 
-import { InternalFunctions } from './libraries/InternalFunctions.sol';
+import * as util from './libraries/Util.sol';
+import * as gsf from './storage/GovernanceStorage.sol';
+import * as qssf from './storage/QuickSwapStorage.sol';
+import * as dsf from './storage/DiamondStorage.sol';
+import { DiamondCutLib } from './libraries/DiamondCutLib.sol';
 import { IDiamondLoupe } from './interfaces/IDiamondLoupe.sol';
 import { IERC165 } from './interfaces/IERC165.sol';
 import { DiamondLoupe } from './facets/DiamondLoupe.sol';
-import { Diamond, DiamondStorageContract } from './libraries/Diamond.sol';
-import { ERC20Token } from './facets/ERC20Token.sol';
 import { Governance } from './facets/Governance.sol';
+import { GovernanceToken } from './facets/GovernanceToken.sol';
+import { QuickSwapFactory } from './facets/QuickSwapFactory.sol';
 
-contract GovernanceTokenDiamond is InternalFunctions {  
+
+contract GovernanceTokenDiamond {  
     
-    constructor() {
-        (ERC20TokenStorage storage ets,
-        GovernanceStorage storage gs) = governanceTokenStorage();
+    constructor() {        
+        gsf.GovernanceStorage storage gs = gsf.governanceStorage();
         // Set total supply cap. The token supply cannot grow past this.
-        ets.totalSupplyCap = 100_000_000e18;
+        gs.totalSupplyCap = 100_000_000e18;
         // Require 5 percent of governance token for votes to pass a proposal
         gs.quorumDivisor = 20;
         // Proposers must own 1 percent of totalSupply to submit a proposal
@@ -39,12 +43,18 @@ contract GovernanceTokenDiamond is InternalFunctions {
         // Proposals must have no more than 336 hours (14 days) of voting time
         gs.maximumVotingTime = 336;
 
+        // QuickSwap variables
+        qssf.QuickSwapStorage storage qss = qssf.quickSwapStorage();
+        qss.feeToSetter = address(this);
+        qss.feeTo = address(this);
+
         // Create a DiamondLoupeFacet contract which implements the Diamond Loupe interface
         DiamondLoupe diamondLoupe = new DiamondLoupe();   
-        ERC20Token erc20Token = new ERC20Token();
+        GovernanceToken governanceToken = new GovernanceToken();
         Governance governance = new Governance();
+        QuickSwapFactory quickSwapFactory = new QuickSwapFactory();
 
-        bytes[] memory cut = new bytes[](3);
+        bytes[] memory cut = new bytes[](4);
         
         // Adding diamond loupe functions                
         cut[0] = abi.encodePacked(
@@ -57,18 +67,18 @@ contract GovernanceTokenDiamond is InternalFunctions {
         );
 
         cut[1] = abi.encodePacked(
-            erc20Token,
-            ERC20Token.name.selector,
-            ERC20Token.symbol.selector,
-            ERC20Token.decimals.selector,
-            ERC20Token.totalSupply.selector,
-            ERC20Token.balanceOf.selector,
-            ERC20Token.transfer.selector,
-            ERC20Token.transferFrom.selector,
-            ERC20Token.approve.selector,
-            ERC20Token.allowance.selector,
-            ERC20Token.increaseAllowance.selector,
-            ERC20Token.decreaseAllowance.selector
+            governanceToken,
+            GovernanceToken.name.selector,
+            GovernanceToken.symbol.selector,
+            GovernanceToken.decimals.selector,
+            GovernanceToken.totalSupply.selector,
+            GovernanceToken.balanceOf.selector,
+            GovernanceToken.transfer.selector,
+            GovernanceToken.transferFrom.selector,
+            GovernanceToken.approve.selector,
+            GovernanceToken.allowance.selector,
+            GovernanceToken.increaseAllowance.selector,
+            GovernanceToken.decreaseAllowance.selector
         );
 
         cut[2] = abi.encodePacked(
@@ -80,11 +90,24 @@ contract GovernanceTokenDiamond is InternalFunctions {
             Governance.vote.selector,
             Governance.unvote.selector
         );
+
+        cut[3] = abi.encodePacked(
+            quickSwapFactory,
+            QuickSwapFactory.allPairsLength.selector,
+            QuickSwapFactory.feeTo.selector,
+            QuickSwapFactory.feeToSetter.selector,
+            QuickSwapFactory.getPair.selector,
+            QuickSwapFactory.allPairs.selector,
+            QuickSwapFactory.createPair.selector,
+            QuickSwapFactory.setFeeTo.selector,
+            QuickSwapFactory.setFeeToSetter.selector
+        );
+
         
-        diamondCut(cut);
+        DiamondCutLib.diamondCut(cut);
         
         // adding ERC165 data
-        DiamondStorage storage ds = diamondStorage();
+        dsf.DiamondStorage storage ds = dsf.diamondStorage();
         ds.supportedInterfaces[IERC165.supportsInterface.selector] = true;        
         bytes4 interfaceID = IDiamondLoupe.facets.selector ^ IDiamondLoupe.facetFunctionSelectors.selector ^ IDiamondLoupe.facetAddresses.selector ^ IDiamondLoupe.facetAddress.selector;
         ds.supportedInterfaces[interfaceID] = true;
@@ -93,8 +116,8 @@ contract GovernanceTokenDiamond is InternalFunctions {
     // Find facet for function that is called and execute the
     // function if a facet is found and return any value.
     fallback() external payable {        
-        DiamondStorage storage ds;
-        bytes32 position = DiamondStorageContract.DIAMOND_STORAGE_POSITION;           
+        dsf.DiamondStorage storage ds;
+        bytes32 position = keccak256("diamond.standard.diamond.storage");
         assembly { ds.slot := position }
         address facet = address(bytes20(ds.facets[msg.sig]));
         require(facet != address(0), "Function does not exist.");
@@ -112,5 +135,6 @@ contract GovernanceTokenDiamond is InternalFunctions {
 
     receive() external payable {
     }
+    
 }
   
