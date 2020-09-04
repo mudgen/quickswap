@@ -45,7 +45,8 @@ module.exports = {
     development: {
       host: "127.0.0.1",     // Localhost (default: none)
       port: 8545,            // Standard Ethereum port (default: none)
-     network_id: "*",       // Any network (default: none)
+      network_id: "*",       // Any network (default: none)
+      gas: 9721975,
     },
     matic: {
       provider: () => new HDWalletProvider(mnemonic, `https://rpc-mumbai.matic.today`, 1),
@@ -53,7 +54,8 @@ module.exports = {
       confirmations: 2,
       timeoutBlocks: 200,
       skipDryRun: true,
-      gasPrice: 5000000000                
+      gasPrice: 5000000000,
+      gas: 9721975,
     },
     // Another network with more advanced options...
     // advanced: {

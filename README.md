@@ -8,8 +8,8 @@ Execute this to deploy:
 
 Matic Mumbai Network contract addresses:
 
-* UniswapV2Factory: `0x4A271b59763D4D8A18fF55f1FAA286dE97317B15`
-* UniswapV2Router02: `0xDf36944e720cf5Af30a3C5D80d36db5FB71dDE40`
+* Diamond: `0x4fe23a33922BcC5e560fdd74A84cDDe4D2BdaaAC`
+* UniswapV2Router02: `0xFCB5348111665Cf95a777f0c4FCA768E05601760`
 
 # Changes from Uniswap V2
 
