@@ -2,14 +2,14 @@
 pragma solidity >=0.7.1;
 
 import './interfaces/IQuickSwapPair.sol';
-import './QuickSwapERC20.sol';
+import './QuickSwapLiquidityToken.sol';
 import './libraries/Math.sol';
 import './libraries/UQ112x112.sol';
 import './interfaces/IERC20.sol';
 import './interfaces/IQuickSwapFactory.sol';
 import './interfaces/IQuickSwapCallee.sol';
 
-contract QuickSwapPair is IQuickSwapPair, QuickSwapERC20 {
+contract QuickSwapPair is IQuickSwapPair, QuickSwapLiquidityToken {
     using SafeMath  for uint;
     using UQ112x112 for uint224;
 
@@ -78,11 +78,13 @@ contract QuickSwapPair is IQuickSwapPair, QuickSwapERC20 {
         uint lastTimestamp = lastGovTokenBalance[_from].timestamp;
         bal = lastGovTokenBalance[_from].balance + uint224((liquidity / (govTokenDivisor * SECONDS_IN_YEAR)) * (block.timestamp - lastTimestamp));
     }
-/*
-    function withdrawGovToken() {
-        
+
+    function withdrawQuickSwap() external {
+        updateGovTokenBalance(msg.sender);
+        uint value = lastGovTokenBalance[msg.sender].balance;
+        IQuickSwapFactory(factory).mintQuickSwap(token0, token1, msg.sender, value);
     }
-*/
+
     uint private unlocked = 1;
     modifier lock() {
         require(unlocked == 1, 'QuickSwap: LOCKED');

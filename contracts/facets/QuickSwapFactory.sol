@@ -3,15 +3,15 @@ pragma solidity >=0.7.1;
 
 import '../interfaces/IQuickSwapFactory.sol';
 import '../QuickSwapPair.sol';
+import * as util from '../libraries/Util.sol';
 // qssf == quickswap storage file
 import * as qssf from '../storage/QuickSwapStorage.sol';
 
-contract QuickSwapFactory is IQuickSwapFactory {
-    
-    constructor() {
-        qssf.QuickSwapStorage storage qss = qssf.quickSwapStorage();
-        qss.feeToSetter = address(this);
-        qss.feeTo = address(this);
+contract QuickSwapFactory is IQuickSwapFactory {   
+
+    function mintQuickSwap(address tokenA, address tokenB, address _to, uint _value) external {
+        require(qssf.quickSwapStorage().getPair[tokenA][tokenB] == msg.sender, 'QuickSwap: Not a pair');
+        util.mintGovernanceTokens(_to, _value); 
     }
 
     function allPairsLength() external view override returns (uint) {

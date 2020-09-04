@@ -5,11 +5,11 @@ import { IERC20 } from '../interfaces/IERC20.sol';
 import * as util from '../libraries/Util.sol';
 import * as gsf from '../storage/GovernanceStorage.sol';
 
-contract GovernanceToken is IERC20 {   
+contract QuickSwapToken is IERC20 {   
 
-    function name() public pure override returns (string memory) { return 'GovernanceToken'; }
+    function name() public pure override returns (string memory) { return 'QuickSwap'; }
 
-    function symbol() public pure override returns (string memory) { return 'GT'; }
+    function symbol() public pure override returns (string memory) { return 'QS'; }
 
     function decimals() public pure override returns (uint8) { return 18; }
     

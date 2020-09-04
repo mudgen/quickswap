@@ -4,11 +4,11 @@ pragma solidity >=0.7.1;
 import './interfaces/IQuickSwapERC20.sol';
 import './libraries/SafeMath.sol';
 
-contract QuickSwapERC20 is IQuickSwapERC20 {
+contract QuickSwapLiquidityToken is IQuickSwapERC20 {
     using SafeMath for uint;
 
-    string public constant override name = 'QuickSwap';
-    string public constant override symbol = 'QS';
+    string public constant override name = 'QuickSwap Liquidity Token';
+    string public constant override symbol = 'QSLT';
     uint8 public constant override decimals = 18;
     uint  public override totalSupply;
     mapping(address => uint) public override balanceOf;

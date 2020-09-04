@@ -17,18 +17,18 @@ import { IDiamondLoupe } from './interfaces/IDiamondLoupe.sol';
 import { IERC165 } from './interfaces/IERC165.sol';
 import { DiamondLoupe } from './facets/DiamondLoupe.sol';
 import { Governance } from './facets/Governance.sol';
-import { GovernanceToken } from './facets/GovernanceToken.sol';
+import { QuickSwapToken } from './facets/QuickSwapToken.sol';
 import { QuickSwapFactory } from './facets/QuickSwapFactory.sol';
 
 
-contract GovernanceTokenDiamond {  
+contract Diamond {  
     
     constructor() {        
         gsf.GovernanceStorage storage gs = gsf.governanceStorage();
         // Set total supply cap. The token supply cannot grow past this.
         gs.totalSupplyCap = 100_000_000e18;
-        // Require 5 percent of governance token for votes to pass a proposal
-        gs.quorumDivisor = 20;
+        // Require 2 percent of governance token for votes to pass a proposal
+        gs.quorumDivisor = 50;
         // Proposers must own 1 percent of totalSupply to submit a proposal
         gs.proposalThresholdDivisor = 100;
         // Proposers get an additional 5 percent of their balance if their proposal passes
@@ -50,7 +50,7 @@ contract GovernanceTokenDiamond {
 
         // Create a DiamondLoupeFacet contract which implements the Diamond Loupe interface
         DiamondLoupe diamondLoupe = new DiamondLoupe();   
-        GovernanceToken governanceToken = new GovernanceToken();
+        QuickSwapToken quickSwapToken = new QuickSwapToken();
         Governance governance = new Governance();
         QuickSwapFactory quickSwapFactory = new QuickSwapFactory();
 
@@ -67,18 +67,18 @@ contract GovernanceTokenDiamond {
         );
 
         cut[1] = abi.encodePacked(
-            governanceToken,
-            GovernanceToken.name.selector,
-            GovernanceToken.symbol.selector,
-            GovernanceToken.decimals.selector,
-            GovernanceToken.totalSupply.selector,
-            GovernanceToken.balanceOf.selector,
-            GovernanceToken.transfer.selector,
-            GovernanceToken.transferFrom.selector,
-            GovernanceToken.approve.selector,
-            GovernanceToken.allowance.selector,
-            GovernanceToken.increaseAllowance.selector,
-            GovernanceToken.decreaseAllowance.selector
+            quickSwapToken,
+            QuickSwapToken.name.selector,
+            QuickSwapToken.symbol.selector,
+            QuickSwapToken.decimals.selector,
+            QuickSwapToken.totalSupply.selector,
+            QuickSwapToken.balanceOf.selector,
+            QuickSwapToken.transfer.selector,
+            QuickSwapToken.transferFrom.selector,
+            QuickSwapToken.approve.selector,
+            QuickSwapToken.allowance.selector,
+            QuickSwapToken.increaseAllowance.selector,
+            QuickSwapToken.decreaseAllowance.selector
         );
 
         cut[2] = abi.encodePacked(

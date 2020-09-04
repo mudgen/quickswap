@@ -5,9 +5,19 @@ pragma experimental ABIEncoderV2;
 import * as gsf from '../storage/GovernanceStorage.sol';
 
 
-function mintGovToken(address _to, uint96 _value) {
-    gsf.GovernanceStorage storage gs = gsf.governanceStorage();        
-    gs.totalSupply += _value;
-    gs.balances[_to] += _value;
+function mintGovernanceTokens(address _to, uint _value) {
+    gsf.GovernanceStorage storage gs = gsf.governanceStorage();
+    uint totalSupply = gs.totalSupply;
+    uint totalSupplyCap = gs.totalSupplyCap;
+    if(totalSupply < totalSupplyCap) {        
+        uint diff = totalSupplyCap - totalSupply;
+        if(_value > diff) {
+            _value = diff;
+        }
+        if(_value > 0) {    
+            gs.totalSupply += uint96(_value);
+            gs.balances[_to] += _value;
+        }
+    }
 }
 

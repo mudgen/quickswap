@@ -68,8 +68,7 @@ contract Governance {
                         uint fractionOfTotalSupply = totalSupply / gs.voteAwardCapDivisor;
                         if(votes > fractionOfTotalSupply) {
                             votes = fractionOfTotalSupply;
-                        }
-                        // 5 percent reward
+                        }                        
                         uint proposerAwardDivisor = gs.proposerAwardDivisor;
                         gs.totalSupply += uint96(votes / proposerAwardDivisor);
                         gs.balances[proposer] += votes / proposerAwardDivisor;

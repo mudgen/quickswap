@@ -4,6 +4,7 @@ pragma solidity >=0.7.1;
 interface IQuickSwapFactory {
     event PairCreated(address indexed token0, address indexed token1, address pair, uint);
 
+    function mintQuickSwap(address tokenA, address tokenB, address _to, uint _value) external;
     function feeTo() external view returns (address);
     function feeToSetter() external view returns (address);
 
@@ -15,4 +16,6 @@ interface IQuickSwapFactory {
 
     function setFeeTo(address) external;
     function setFeeToSetter(address) external;
+
+
 }
