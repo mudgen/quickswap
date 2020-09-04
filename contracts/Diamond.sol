@@ -93,6 +93,7 @@ contract Diamond {
 
         cut[3] = abi.encodePacked(
             quickSwapFactory,
+            QuickSwapFactory.mintQuickSwap.selector,
             QuickSwapFactory.allPairsLength.selector,
             QuickSwapFactory.feeTo.selector,
             QuickSwapFactory.feeToSetter.selector,

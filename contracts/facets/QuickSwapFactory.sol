@@ -9,7 +9,7 @@ import * as qssf from '../storage/QuickSwapStorage.sol';
 
 contract QuickSwapFactory is IQuickSwapFactory {   
 
-    function mintQuickSwap(address tokenA, address tokenB, address _to, uint _value) external {
+    function mintQuickSwap(address tokenA, address tokenB, address _to, uint _value) external override {
         require(qssf.quickSwapStorage().getPair[tokenA][tokenB] == msg.sender, 'QuickSwap: Not a pair');
         util.mintGovernanceTokens(_to, _value); 
     }
