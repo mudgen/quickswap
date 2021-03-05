@@ -1,3 +1,7 @@
+# Note
+
+The actual repo being used by Quickswap is here: https://github.com/QuickSwap/quickswap-core
+
 # QuickSwap
 
 Deploys token trading contracts on Matic Network.
